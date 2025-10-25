@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_solidart/flutter_solidart.dart';
+import 'package:solid_annotations/solid_annotations.dart';
 
 final routes = <String, WidgetBuilder>{
-  '/state': (_) => const CounterPage(),
-  '/effect': (_) => const EffectExample(),
+  '/state': (_) => CounterPage(),
+  '/effect': (_) => EffectExample(),
 };
 
 final routeToNameRegex = RegExp('(?:^/|-)([a-zA-Z])');
 
 void main() {
-  SolidartConfig.autoDispose = false;
   runApp(const MyApp());
 }
 
@@ -56,85 +55,49 @@ class MainPage extends StatelessWidget {
   }
 }
 
-class CounterPage extends StatefulWidget {
-  const CounterPage({super.key});
+class CounterPage extends StatelessWidget {
+  CounterPage({super.key});
 
-  @override
-  State<CounterPage> createState() => _CounterPageState();
-}
+  // @SolidState(name: 'customName')
+  @SolidState()
+  int counter = 0;
 
-class _CounterPageState extends State<CounterPage> {
-  final counter = Signal<int>(0, name: 'counter');
-  late final doubleCounter = Computed<int>(
-    () => counter.value * 2,
-    name: 'doubleCounter',
-  );
-
-  @override
-  void dispose() {
-    counter.dispose();
-    doubleCounter.dispose();
-    super.dispose();
-  }
+  @SolidState()
+  int get doubleCounter => counter * 2;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Computed')),
       body: Center(
-        child: SignalBuilder(
-          builder: (context, child) {
-            return Text(
-              'Counter: ${counter.value}, DoubleCounter: ${doubleCounter.value}',
-            );
-          },
-        ),
+        child: Text('Counter: $counter, DoubleCounter: $doubleCounter'),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => counter.value++,
+        onPressed: () => counter++,
         child: const Icon(Icons.add),
       ),
     );
   }
 }
 
-class EffectExample extends StatefulWidget {
-  const EffectExample({super.key});
+class EffectExample extends StatelessWidget {
+  EffectExample({super.key});
 
-  @override
-  State<EffectExample> createState() => _EffectExampleState();
-}
+  @SolidState()
+  int counter = 0;
 
-class _EffectExampleState extends State<EffectExample> {
-  final counter = Signal<int>(0, name: 'counter');
-  late final logCounter = Effect(() {
-    print('Counter changed: ${counter.value}');
-  }, name: 'logCounter');
-
-  @override
-  void initState() {
-    super.initState();
-    logCounter;
-  }
-
-  @override
-  void dispose() {
-    counter.dispose();
-    logCounter.dispose();
-    super.dispose();
+  @SolidEffect()
+  void logCounter() {
+    print('Counter changed: $counter');
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Effect')),
-      body: SignalBuilder(
-        builder: (context, child) {
-          return Center(child: Text('Counter: ${counter.value}'));
-        },
-      ),
+      body: Center(child: Text('Counter: $counter')),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => counter.value++,
+        onPressed: () => counter++,
         child: const Icon(Icons.add),
       ),
     );
