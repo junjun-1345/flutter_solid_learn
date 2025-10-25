@@ -1,0 +1,8 @@
+{
+  "mise.configureExtensionsUseSymLinks": true,
+  "mise.configureExtensionsAutomaticallyIgnoreList": [
+    "dart-code.flutter"
+  ],
+  "dart.flutterSdkPath": "~/.local/share/mise/installs/flutter/3.35.3-stable",
+  "dart.sdkPath": "~/.local/share/mise/installs/flutter/3.35.3-stable/bin/dart"
+}
