@@ -5,24 +5,21 @@
 # IDEs (https://dart.dev/tools#ides-and-editors). The analyzer can also be
 # invoked from the command line by running `flutter analyze`.
 
-# The following line activates a set of recommended lints for Flutter apps,
-# packages, and plugins designed to encourage good coding practices.
-include: package:flutter_lints/flutter.yaml
+# Very Good Analysis のルールセットを利用
+include: package:very_good_analysis/analysis_options.yaml
+
+# 解析器 (Analyzer) の診断レベル上書き
+analyzer:
+  errors:
+    # 不変 (@immutable) クラスに可変フィールドがあると出る診断を無視
+    # Solid などで生成物は不変だが、手書き側で可変にしたいケースを許容
+    must_be_immutable: ignore
 
 linter:
-  # The lint rules applied to this project can be customized in the
-  # section below to disable rules from the `package:flutter_lints/flutter.yaml`
-  # included above or to enable additional rules. A list of all available lints
-  # and their documentation is published at https://dart.dev/lints.
-  #
-  # Instead of disabling a lint rule for the entire project in the
-  # section below, it can also be suppressed for a single line of code
-  # or a specific dart file by using the `// ignore: name_of_lint` and
-  # `// ignore_for_file: name_of_lint` syntax on the line or in the file
-  # producing the lint.
+  # リント (スタイル/ベストプラクティス) の有効化/無効化
   rules:
-    # avoid_print: false  # Uncomment to disable the `avoid_print` rule
-    # prefer_single_quotes: true  # Uncomment to enable the `prefer_single_quotes` rule
+    # 公開 API にドキュメント必須を解除（初期開発の負担軽減）
+    public_member_api_docs: false
 
 # Additional information about this file can be found at
 # https://dart.dev/guides/language/analysis-options

@@ -1,122 +1,335 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_solidart/flutter_solidart.dart';
+import 'package:solid_annotations/extensions.dart';
+import 'package:solid_annotations/provider.dart';
+
+final routes = <String, WidgetBuilder>{
+  '/state': (_) => const CounterPage(),
+  '/effect': (_) => const EffectExample(),
+  '/query': (_) => const QueryExample(),
+  '/environment': (_) => const EnvironmentExample(),
+  '/stream': (_) => const StreamAndSourceExample(),
+};
+
+final routeToNameRegex = RegExp('(?:^/|-)([a-zA-Z])');
 
 void main() {
+  SolidartConfig.autoDispose = false;
   runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-      ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      title: 'Solid Demo',
+      home: const MainPage(),
+      routes: routes,
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
+class MainPage extends StatelessWidget {
+  const MainPage({super.key});
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: ListView.builder(
+        itemCount: routes.length,
+        itemBuilder: (BuildContext context, int index) {
+          final route = routes.keys.elementAt(index);
+
+          final name = route.replaceAllMapped(
+            routeToNameRegex,
+            (match) => match.group(0)!.substring(1).toUpperCase(),
+          );
+
+          return Material(
+            child: ListTile(
+              title: Text(name),
+              onTap: () {
+                Navigator.of(context).pushNamed(route);
+              },
+            ),
+          );
+        },
+      ),
+    );
+  }
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+class CounterPage extends StatefulWidget {
+  const CounterPage({super.key});
 
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
+  @override
+  State<CounterPage> createState() => _CounterPageState();
+}
+
+class _CounterPageState extends State<CounterPage> {
+  final counter = Signal<int>(0, name: 'counter');
+  late final doubleCounter = Computed<int>(
+    () => counter.value * 2,
+    name: 'doubleCounter',
+  );
+
+  @override
+  void dispose() {
+    counter.dispose();
+    doubleCounter.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
     return Scaffold(
-      appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
-      ),
+      appBar: AppBar(title: const Text('Computed')),
       body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
+        child: SignalBuilder(
+          builder: (context, child) {
+            return Text(
+              'Counter: ${counter.value}, DoubleCounter: ${doubleCounter.value}',
+            );
+          },
+        ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => counter.value++,
+        child: const Icon(Icons.add),
+      ),
+    );
+  }
+}
+
+class EffectExample extends StatefulWidget {
+  const EffectExample({super.key});
+
+  @override
+  State<EffectExample> createState() => _EffectExampleState();
+}
+
+class _EffectExampleState extends State<EffectExample> {
+  final counter = Signal<int>(0, name: 'counter');
+  late final logCounter = Effect(() {
+    print('Counter changed: ${counter.value}');
+  }, name: 'logCounter');
+
+  @override
+  void initState() {
+    super.initState();
+    logCounter;
+  }
+
+  @override
+  void dispose() {
+    counter.dispose();
+    logCounter.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Effect')),
+      body: SignalBuilder(
+        builder: (context, child) {
+          return Center(child: Text('Counter: ${counter.value}'));
+        },
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => counter.value++,
+        child: const Icon(Icons.add),
+      ),
+    );
+  }
+}
+
+class QueryExample extends StatefulWidget {
+  const QueryExample({super.key});
+
+  @override
+  State<QueryExample> createState() => _QueryExampleState();
+}
+
+class _QueryExampleState extends State<QueryExample> {
+  final userId = Signal<String?>(null, name: 'userId');
+  final authToken = Signal<String?>(null, name: 'authToken');
+  late final fetchData = Resource<String?>(
+    () async {
+      if (userId.value == null || authToken.value == null) return null;
+      await Future<void>.delayed(const Duration(seconds: 1));
+      return 'Fetched Data for ${userId.value}';
+    },
+    source: Computed(
+      () => (userId.value, authToken.value),
+      name: 'fetchDataSource',
+    ),
+    name: 'fetchData',
+  );
+
+  @override
+  void dispose() {
+    userId.dispose();
+    authToken.dispose();
+    fetchData.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Query')),
+      body: Center(
         child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text('You have pushed the button this many times:'),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
+          spacing: 8,
+          children: [
+            const Text('Complex SolidQuery example'),
+            SignalBuilder(
+              builder: (context, child) {
+                return fetchData().when(
+                  ready: (data) {
+                    if (data == null) {
+                      return const Text('No user ID provided');
+                    }
+                    return Text(data);
+                  },
+                  loading: () => const CircularProgressIndicator(),
+                  error: (error, stackTrace) => Text('Error: $error'),
+                );
+              },
             ),
           ],
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
+        onPressed: () {
+          userId.value = 'user_${DateTime.now().millisecondsSinceEpoch}';
+          authToken.value = 'token_${DateTime.now().millisecondsSinceEpoch}';
+        },
+        child: const Icon(Icons.refresh),
+      ),
+    );
+  }
+}
+
+class ACustomClassWithSolidState {
+  final value = Signal<int>(0, name: 'value');
+
+  void dispose() {
+    print('ACustomClass disposed');
+    value.dispose();
+  }
+}
+
+class ACustomClass {
+  void doNothing() {
+    // no-op
+  }
+}
+
+class EnvironmentExample extends StatelessWidget {
+  const EnvironmentExample({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return SolidProvider(
+      create: (context) => ACustomClassWithSolidState(),
+      child: const EnvironmentInjectionExample(),
+    );
+  }
+}
+
+class EnvironmentInjectionExample extends StatefulWidget {
+  const EnvironmentInjectionExample({super.key});
+
+  @override
+  State<EnvironmentInjectionExample> createState() =>
+      _EnvironmentInjectionExampleState();
+}
+
+class _EnvironmentInjectionExampleState
+    extends State<EnvironmentInjectionExample> {
+  late final ACustomClassWithSolidState myData = context.read<ACustomClassWithSolidState>();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Environment')),
+      body: SignalBuilder(
+        builder: (context, child) {
+          return Center(child: Text(myData.value.value.toString()));
+        },
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => myData.value.value++,
         child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
+      ),
+    );
+  }
+}
+
+class StreamAndSourceExample extends StatefulWidget {
+  const StreamAndSourceExample({super.key});
+
+  @override
+  State<StreamAndSourceExample> createState() => _StreamAndSourceExampleState();
+}
+
+class _StreamAndSourceExampleState extends State<StreamAndSourceExample> {
+  final multiplier = Signal<int>(1, name: 'multiplier');
+  late final fetchData = Resource<int>.stream(
+    () {
+      return Stream.periodic(
+        const Duration(seconds: 1),
+        (i) => i * multiplier.value,
+      );
+    },
+    source: multiplier,
+    name: 'fetchData',
+    useRefreshing: false,
+  );
+
+  @override
+  void dispose() {
+    multiplier.dispose();
+    fetchData.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('QueryWithStream')),
+      body: Center(
+        child: Column(
+          children: [
+            SignalBuilder(
+              builder: (context, child) {
+                return Text('Is refreshing: ${fetchData().isRefreshing}');
+              },
+            ),
+            SignalBuilder(
+              builder: (context, child) {
+                return fetchData().when(
+                  ready: (data) => Text(data.toString()),
+                  loading: CircularProgressIndicator.new,
+                  error: (error, stackTrace) => Text('Error: $error'),
+                );
+              },
+            ),
+            ElevatedButton(
+              onPressed: fetchData.refresh,
+              child: const Text('Manual Refresh'),
+            ),
+          ],
+        ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => multiplier.value++,
+        child: const Icon(Icons.add),
+      ),
     );
   }
 }
