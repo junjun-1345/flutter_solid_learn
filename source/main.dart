@@ -8,6 +8,7 @@ final routes = <String, WidgetBuilder>{
   '/effect': (_) => EffectExample(),
   '/query': (_) => QueryExample(),
   '/environment': (_) => const EnvironmentExample(),
+  '/stream': (_) => StreamAndSourceExample(),
 };
 
 final routeToNameRegex = RegExp('(?:^/|-)([a-zA-Z])');
@@ -199,6 +200,45 @@ class EnvironmentInjectionExample extends StatelessWidget {
       body: Center(child: Text(myData.value.toString())),
       floatingActionButton: FloatingActionButton(
         onPressed: () => myData.value++,
+        child: const Icon(Icons.add),
+      ),
+    );
+  }
+}
+
+class StreamAndSourceExample extends StatelessWidget {
+  StreamAndSourceExample({super.key});
+
+  @SolidState()
+  int multiplier = 1;
+
+  @SolidQuery(useRefreshing: false)
+  Stream<int> fetchData() {
+    return Stream.periodic(const Duration(seconds: 1), (i) => i * multiplier);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('QueryWithStream')),
+      body: Center(
+        child: Column(
+          children: [
+            Text('Is refreshing: ${fetchData().isRefreshing}'),
+            fetchData().when(
+              ready: (data) => Text(data.toString()),
+              loading: CircularProgressIndicator.new,
+              error: (error, stackTrace) => Text('Error: $error'),
+            ),
+            ElevatedButton(
+              onPressed: fetchData.refresh,
+              child: const Text('Manual Refresh'),
+            ),
+          ],
+        ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => multiplier++,
         child: const Icon(Icons.add),
       ),
     );

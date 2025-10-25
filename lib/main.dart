@@ -8,6 +8,7 @@ final routes = <String, WidgetBuilder>{
   '/effect': (_) => const EffectExample(),
   '/query': (_) => const QueryExample(),
   '/environment': (_) => const EnvironmentExample(),
+  '/stream': (_) => const StreamAndSourceExample(),
 };
 
 final routeToNameRegex = RegExp('(?:^/|-)([a-zA-Z])');
@@ -263,6 +264,70 @@ class _EnvironmentInjectionExampleState
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => myData.value.value++,
+        child: const Icon(Icons.add),
+      ),
+    );
+  }
+}
+
+class StreamAndSourceExample extends StatefulWidget {
+  const StreamAndSourceExample({super.key});
+
+  @override
+  State<StreamAndSourceExample> createState() => _StreamAndSourceExampleState();
+}
+
+class _StreamAndSourceExampleState extends State<StreamAndSourceExample> {
+  final multiplier = Signal<int>(1, name: 'multiplier');
+  late final fetchData = Resource<int>.stream(
+    () {
+      return Stream.periodic(
+        const Duration(seconds: 1),
+        (i) => i * multiplier.value,
+      );
+    },
+    source: multiplier,
+    name: 'fetchData',
+    useRefreshing: false,
+  );
+
+  @override
+  void dispose() {
+    multiplier.dispose();
+    fetchData.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('QueryWithStream')),
+      body: Center(
+        child: Column(
+          children: [
+            SignalBuilder(
+              builder: (context, child) {
+                return Text('Is refreshing: ${fetchData().isRefreshing}');
+              },
+            ),
+            SignalBuilder(
+              builder: (context, child) {
+                return fetchData().when(
+                  ready: (data) => Text(data.toString()),
+                  loading: CircularProgressIndicator.new,
+                  error: (error, stackTrace) => Text('Error: $error'),
+                );
+              },
+            ),
+            ElevatedButton(
+              onPressed: fetchData.refresh,
+              child: const Text('Manual Refresh'),
+            ),
+          ],
+        ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => multiplier.value++,
         child: const Icon(Icons.add),
       ),
     );
