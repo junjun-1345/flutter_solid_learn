@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:solid_annotations/extensions.dart';
 import 'package:solid_annotations/solid_annotations.dart';
 
 final routes = <String, WidgetBuilder>{
   '/state': (_) => CounterPage(),
   '/effect': (_) => EffectExample(),
+  '/query': (_) => QueryExample(),
 };
 
 final routeToNameRegex = RegExp('(?:^/|-)([a-zA-Z])');
@@ -99,6 +101,57 @@ class EffectExample extends StatelessWidget {
       floatingActionButton: FloatingActionButton(
         onPressed: () => counter++,
         child: const Icon(Icons.add),
+      ),
+    );
+  }
+}
+
+class QueryExample extends StatelessWidget {
+  QueryExample({super.key});
+
+  @SolidState()
+  String? userId;
+
+  @SolidState()
+  String? authToken;
+
+  @SolidQuery()
+  Future<String?> fetchData() async {
+    if (userId == null || authToken == null) return null;
+    await Future<void>.delayed(const Duration(seconds: 1));
+    return 'Fetched Data for $userId';
+  }
+
+  // @SolidQuery(debounce: Duration(seconds: 1))
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Query')),
+      body: Center(
+        child: Column(
+          spacing: 8,
+          children: [
+            const Text('Complex SolidQuery example'),
+            fetchData().when(
+              ready: (data) {
+                if (data == null) {
+                  return const Text('No user ID provided');
+                }
+                return Text(data);
+              },
+              loading: () => const CircularProgressIndicator(),
+              error: (error, stackTrace) => Text('Error: $error'),
+            ),
+          ],
+        ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          userId = 'user_${DateTime.now().millisecondsSinceEpoch}';
+          authToken = 'token_${DateTime.now().millisecondsSinceEpoch}';
+        },
+        child: const Icon(Icons.refresh),
       ),
     );
   }

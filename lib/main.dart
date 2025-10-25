@@ -4,6 +4,7 @@ import 'package:flutter_solidart/flutter_solidart.dart';
 final routes = <String, WidgetBuilder>{
   '/state': (_) => const CounterPage(),
   '/effect': (_) => const EffectExample(),
+  '/query': (_) => const QueryExample(),
 };
 
 final routeToNameRegex = RegExp('(?:^/|-)([a-zA-Z])');
@@ -136,6 +137,74 @@ class _EffectExampleState extends State<EffectExample> {
       floatingActionButton: FloatingActionButton(
         onPressed: () => counter.value++,
         child: const Icon(Icons.add),
+      ),
+    );
+  }
+}
+
+class QueryExample extends StatefulWidget {
+  const QueryExample({super.key});
+
+  @override
+  State<QueryExample> createState() => _QueryExampleState();
+}
+
+class _QueryExampleState extends State<QueryExample> {
+  final userId = Signal<String?>(null, name: 'userId');
+  final authToken = Signal<String?>(null, name: 'authToken');
+  late final fetchData = Resource<String?>(
+    () async {
+      if (userId.value == null || authToken.value == null) return null;
+      await Future<void>.delayed(const Duration(seconds: 1));
+      return 'Fetched Data for ${userId.value}';
+    },
+    source: Computed(
+      () => (userId.value, authToken.value),
+      name: 'fetchDataSource',
+    ),
+    name: 'fetchData',
+  );
+
+  @override
+  void dispose() {
+    userId.dispose();
+    authToken.dispose();
+    fetchData.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Query')),
+      body: Center(
+        child: Column(
+          spacing: 8,
+          children: [
+            const Text('Complex SolidQuery example'),
+            SignalBuilder(
+              builder: (context, child) {
+                return fetchData().when(
+                  ready: (data) {
+                    if (data == null) {
+                      return const Text('No user ID provided');
+                    }
+                    return Text(data);
+                  },
+                  loading: () => const CircularProgressIndicator(),
+                  error: (error, stackTrace) => Text('Error: $error'),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          userId.value = 'user_${DateTime.now().millisecondsSinceEpoch}';
+          authToken.value = 'token_${DateTime.now().millisecondsSinceEpoch}';
+        },
+        child: const Icon(Icons.refresh),
       ),
     );
   }
