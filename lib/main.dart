@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_solidart/flutter_solidart.dart';
+import 'package:solid_annotations/extensions.dart';
+import 'package:solid_annotations/provider.dart';
 
 final routes = <String, WidgetBuilder>{
   '/state': (_) => const CounterPage(),
   '/effect': (_) => const EffectExample(),
   '/query': (_) => const QueryExample(),
+  '/environment': (_) => const EnvironmentExample(),
 };
 
 final routeToNameRegex = RegExp('(?:^/|-)([a-zA-Z])');
@@ -205,6 +208,62 @@ class _QueryExampleState extends State<QueryExample> {
           authToken.value = 'token_${DateTime.now().millisecondsSinceEpoch}';
         },
         child: const Icon(Icons.refresh),
+      ),
+    );
+  }
+}
+
+class ACustomClassWithSolidState {
+  final value = Signal<int>(0, name: 'value');
+
+  void dispose() {
+    print('ACustomClass disposed');
+    value.dispose();
+  }
+}
+
+class ACustomClass {
+  void doNothing() {
+    // no-op
+  }
+}
+
+class EnvironmentExample extends StatelessWidget {
+  const EnvironmentExample({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return SolidProvider(
+      create: (context) => ACustomClassWithSolidState(),
+      child: const EnvironmentInjectionExample(),
+    );
+  }
+}
+
+class EnvironmentInjectionExample extends StatefulWidget {
+  const EnvironmentInjectionExample({super.key});
+
+  @override
+  State<EnvironmentInjectionExample> createState() =>
+      _EnvironmentInjectionExampleState();
+}
+
+class _EnvironmentInjectionExampleState
+    extends State<EnvironmentInjectionExample> {
+  late final ACustomClassWithSolidState myData = context.read<ACustomClassWithSolidState>();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Environment')),
+      body: SignalBuilder(
+        builder: (context, child) {
+          return Center(child: Text(myData.value.value.toString()));
+        },
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => myData.value.value++,
+        child: const Icon(Icons.add),
       ),
     );
   }

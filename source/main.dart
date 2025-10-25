@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:solid_annotations/extensions.dart';
+import 'package:solid_annotations/provider.dart';
 import 'package:solid_annotations/solid_annotations.dart';
 
 final routes = <String, WidgetBuilder>{
   '/state': (_) => CounterPage(),
   '/effect': (_) => EffectExample(),
   '/query': (_) => QueryExample(),
+  '/environment': (_) => const EnvironmentExample(),
 };
 
 final routeToNameRegex = RegExp('(?:^/|-)([a-zA-Z])');
@@ -152,6 +154,52 @@ class QueryExample extends StatelessWidget {
           authToken = 'token_${DateTime.now().millisecondsSinceEpoch}';
         },
         child: const Icon(Icons.refresh),
+      ),
+    );
+  }
+}
+
+class ACustomClassWithSolidState {
+  @SolidState()
+  int value = 0;
+
+  void dispose() {
+    print('ACustomClass disposed');
+  }
+}
+
+class ACustomClass {
+  void doNothing() {
+    // no-op
+  }
+}
+
+class EnvironmentExample extends StatelessWidget {
+  const EnvironmentExample({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return SolidProvider(
+      create: (context) => ACustomClassWithSolidState(),
+      child: EnvironmentInjectionExample(),
+    );
+  }
+}
+
+class EnvironmentInjectionExample extends StatelessWidget {
+  EnvironmentInjectionExample({super.key});
+
+  @SolidEnvironment()
+  late ACustomClassWithSolidState myData;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Environment')),
+      body: Center(child: Text(myData.value.toString())),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => myData.value++,
+        child: const Icon(Icons.add),
       ),
     );
   }
