@@ -14,11 +14,21 @@ class _CounterState extends State<Counter> {
     () => counter.value * 2,
     name: 'doubleCounter',
   );
+  late final logCounter = Effect(() {
+    print('Counter changed: ${counter.value}');
+  }, name: 'logCounter');
+
+  @override
+  void initState() {
+    super.initState();
+    logCounter;
+  }
 
   @override
   void dispose() {
     counter.dispose();
     doubleCounter.dispose();
+    logCounter.dispose();
     super.dispose();
   }
 

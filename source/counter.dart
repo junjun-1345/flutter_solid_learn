@@ -10,6 +10,11 @@ class Counter extends StatelessWidget {
   @SolidState()
   int get doubleCounter => counter * 2;
 
+  @SolidEffect()
+  void logCounter() {
+    print('Counter changed: $counter');
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
